@@ -1,0 +1,144 @@
+﻿@page "/"
+
+@using System.Collections.ObjectModel
+@using BlazorAIMaps.Service
+@using Newtonsoft.Json
+
+@inject AISampleService OpenAIService
+
+<PageTitle>Home</PageTitle>
+
+<style>
+    #search-container {
+        position: fixed;
+        top: 90px;
+        left: 300px;
+        z-index: 10;
+        background: transparent;
+        padding: 5px;
+        border-radius: 5px;
+    }
+</style>
+
+<div id="search-container">
+    <SfTextBox @ref="TextBox" Created="AddSearchIcon" Width="200px" Value="@SearchQuery" ValueChanged="ValueChanged" ShowClearButton="true"></SfTextBox>
+</div>
+<SfMaps Height="600px">
+    <SfSpinner @bind-Visible="@SpinnerVisibility"></SfSpinner>
+    <MapsEvents Loaded="Loaded"></MapsEvents>
+    <MapsZoomSettings Enable="true" MaxZoom="19" ZoomFactor="1" ShouldZoomInitially="true">
+        <MapsZoomToolbarSettings>
+            <MapsZoomToolbarButton ToolbarItems="new List<ToolbarItem>() { ToolbarItem.Zoom, ToolbarItem.ZoomIn, ToolbarItem.ZoomOut, ToolbarItem.Pan, ToolbarItem.Reset }"></MapsZoomToolbarButton>
+        </MapsZoomToolbarSettings>
+    </MapsZoomSettings>
+    <MapsLayers>
+        <MapsLayer UrlTemplate="https://a.tile.openstreetmap.org/level/tileX/tileY.png" TValue="string">
+            <MapsMarkerSettings>
+                @if (MarkerCollection.Count > 0)
+                {
+                    <MapsMarker TValue="Markers" Visible="true" DataSource="MarkerCollection" AnimationDuration="0" Width="30" Height="30" Shape="Syncfusion.Blazor.Maps.MarkerType.Image" ImageUrl="map_pin.png">
+                        <MapsMarkerTooltipSettings Visible="true">
+                            <TooltipTemplate>
+                                @{
+                                    Markers Data = context as Markers;
+                                    if (SearchQuery.Contains("Hospital"))
+                                    {
+                                        string selectedImage = hospitalImageList[_random.Next(hospitalImageList.Length)];
+                                        <div style="position: relative;width:220px;padding: 20px;background-color: white;border-radius: 10px;box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);text-align: center;"><img src="@selectedImage" alt="Hospital" style="width: 100%;height: auto;border-radius: 5px;margin-bottom: 10px;" /><p style="margin: 0; font-size: 14px; line-height: 1.5">@Data.PlaceDetails</p></div>
+                                    }
+                                    else
+                                    {
+                                        <div style="position: relative;width:220px;padding: 20px;background-color: white;border-radius: 10px;box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);text-align: center;"><p style="margin: 0; font-size: 14px; line-height: 1.5">@Data.PlaceDetails</p></div>
+                                    }
+                                }
+                            </TooltipTemplate>
+                        </MapsMarkerTooltipSettings>
+                    </MapsMarker>
+                }
+            </MapsMarkerSettings>
+        </MapsLayer>
+    </MapsLayers>
+</SfMaps>
+
+@code
+{
+    SfTextBox TextBox;
+    private string[] hospitalImageList = new string[]
+    {
+            "hospital1.jpg",
+            "hospital2.jpg",
+            "hospital3.jpg",
+            "hospital4.jpg",
+            "hospital5.jpg",
+            "hospital6.jpg"
+    };
+    private Random _random = new Random();
+    public bool SpinnerVisibility { get; set; } = true;
+    ObservableCollection<Markers> MarkerCollection = new ObservableCollection<Markers>();
+    private string SearchQuery { get; set; } = "Hospitals in New York";
+
+    private async Task ValueChanged(string changedValue)
+    {
+        SearchQuery = !string.IsNullOrEmpty(changedValue) ? changedValue : string.Empty;
+        MarkerCollection.Clear();
+        SpinnerVisibility = true;
+        await GetMarkerData(SearchQuery);
+    }
+
+    public async Task GetMarkerData(string value)
+    {
+        if (!string.IsNullOrEmpty(value))
+        {
+            string result = await OpenAIService.GetAIResponse("Generate" + value + "for 15 important cities as a JSON object, with fields such as 'city_name', 'place_name', 'latitude', 'longitude', 'place_details' and 'address'. Provide the simple address. The information about the place with minimum 150 characters. Strictly provide flat JSON list without nested objects. Strictly provide information in English Language.");
+            if (result.Contains("```json"))
+            {
+                string cleanedResponseText = result.Split("```json")[1].Trim();
+                result = cleanedResponseText.Split("```")[0].Trim();
+                if (!string.IsNullOrEmpty(result))
+                {
+                    MarkerCollection = JsonConvert.DeserializeObject<ObservableCollection<Markers>>(result);
+                }
+            }
+            else
+            {
+                MarkerCollection.Clear();
+            }
+        }
+        else
+        {
+            MarkerCollection.Clear();
+        }
+        SpinnerVisibility = false;
+    }
+
+    private async Task Loaded()
+    {
+        if (MarkerCollection.Count == 0)
+        {
+            await GetMarkerData(SearchQuery);
+        }
+    }
+
+    public class Markers
+    {
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
+
+        [JsonProperty("place_name")]
+        public string PlaceName { get; set; }
+
+        [JsonProperty("city_name")]
+        public string CityName { get; set; }
+
+        [JsonProperty("address")]
+        public string Address { get; set; }
+
+        [JsonProperty("place_details")]
+        public string PlaceDetails { get; set; }
+    }
+
+    public void AddSearchIcon()
+    {
+        TextBox.AddIconAsync("append", "fas fa-search");
+    }
+}
