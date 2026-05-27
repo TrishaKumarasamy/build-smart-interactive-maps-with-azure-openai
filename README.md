@@ -1,8 +1,6 @@
 # Blazor AI Maps
 
-Build smart, interactive maps with Azure OpenAI and Blazor Maps
-
-This project integrate **Azure OpenAI** with the **Blazor Maps** component to create AI-powered, interactive maps. From a single text query,the app uses Azure OpenAI to generate a structured list of locations and renders them as customized markers with rich tooltips on an OpenStreetMap-backed map.
+This project integrate **Azure OpenAI** with the **[Blazor Maps](https://www.syncfusion.com/blazor-components/blazor-map)** component to create AI-powered, interactive maps. From a single text query,the app uses Azure OpenAI to generate a structured list of locations and renders them as customized markers with rich tooltips on an OpenStreetMap-backed map.
 
 ## Overview
 
@@ -58,7 +56,7 @@ dotnet run
 ```
 ## References
 
-- [Blazor Documentation](https://learn.microsoft.com/en-us/aspnet/core/blazor)
+- [Blazor Documentation](https://blazor.syncfusion.com/documentation/introduction)
 - [Blazor Maps documentation](https://blazor.syncfusion.com/documentation/maps/getting-started)
 - [Blazor Maps online demos](https://blazor.syncfusion.com/demos/maps/default-functionalities)
 
